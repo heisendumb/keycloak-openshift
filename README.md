@@ -17,7 +17,7 @@ Esse documento apresenta instruções passo a passo sobre como implantar Keycloa
 Construa a imagem do contêiner Docker:
 
 ```
-[username@hostname ~]$ docker build -t keycloak-local:9.0.2 -f ${ROOT_PATH}/srv/keycloak/login-prd/Dockerfile
+[username@hostname ~]$ docker build -t keycloak-local:9.0.2 -f ${ROOT_PATH}/srv/keycloak/sso/Dockerfile
 ````
 
 ### Rotulando Imagem
@@ -45,7 +45,7 @@ A seguir está comando para criar/atualizar a imagem no registry do Docker:
 
 #### Produção
 ```
-[username@hostname ~]$ docker push docker-registry-default.example.io/login-prd/keycloak:latest 
+[username@hostname ~]$ docker push docker-registry-default.example.io/sso/keycloak:latest 
 ```
 
 ---
@@ -54,7 +54,7 @@ A seguir está comando para criar/atualizar a imagem no registry do Docker:
 Para prosseguir nesta etapa é necessário realizar login no OpenShift através do seguinte comando:
 
 ```
-[username@hostname ~]$ oc login okdprd.example.io
+[username@hostname ~]$ oc login okd.example.io
 ```
 
 Isso irá implantar um cluster de Keycloak com 2 nós de execução. Todos os requisitos como os objetos do k8s namespace, services e routes serão criados.
@@ -94,8 +94,8 @@ secure-keycloak    ClusterIP   172.30.238.241   <none>        8443/TCP       4d
 ```
 [username@hostname ~]$ oc get routes -n sso
 NAME                    HOST/PORT                          PATH                   SERVICES          PORT       TERMINATION          WILDCARD
-secure-admin-keycloak   login.example.com ... 1 more       /auth/realms/master/   secure-keycloak   8443-tcp   reencrypt/Redirect   None
-secure-keycloak         login.example.com ... 1 more                              secure-keycloak   8443-tcp   reencrypt/Redirect   None
+secure-admin-keycloak   sso.example.com ... 1 more         /auth/realms/master/   secure-keycloak   8443-tcp   reencrypt/Redirect   None
+secure-keycloak         sso.example.com ... 1 more                                secure-keycloak   8443-tcp   reencrypt/Redirect   None
 ```
 
 ---
@@ -134,7 +134,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: keycloak-admin-user-secret
-  namespace: sso-int
+  namespace: sso
   labels:
     application: keycloak
 data:
@@ -191,36 +191,6 @@ spec:
   targetCPUUtilizationPercentage: 90
 ---
 ```
-
----
-## Atualização Automatizada
-
-Para atualizar o Keycloak utilizando o pipeline são necessários seguir os seguintes passos.
-
-* **Atualizar a *tag* da imagem base do Keycloak no arquivo ```srv/keycloak/login-prd/Dockerfile```.**
-
-```
-FROM jboss/keycloak:TAG_IMAGEM_BASE
-```
-
-* **Adicionar variáveis de ambiente ou atualizar o valor das variáveis de ambiente já existentes no arquivo ```srv/keycloak/login-prd/keycloak.yml```. Abaixo há um exemplo da lista existente, aonde 
-as variáveis podem ser adicionadas ou seus valores alterados (opcional).**
-
-```
-env_vars:
-      - DB_VENDOR="POSTGRES"
-      - DB_ADDR=""
-      - DB_DATABASE="KEYCLOAK"
-      - X509_CA_BUNDLE="/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt /var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-      - JGROUPS_DISCOVERY_PROTOCOL="dns.DNS_PING"
-      - JGROUPS_DISCOVERY_PROPERTIES="dns_query=keycloak-cluster.sso.svc.cluster.local"
-      - KEYCLOAK_WELCOME_THEME="keycloak"
-      - KEYCLOAK_DEFAULT_THEME="keycloak"
-      - PROXY_ADDRESS_FORWARDING="true"
-```
-
-* **Para atualização das credenciais do banco de dados ou do usuário administrador do Keycloak (recriação do usuário) é necessário realizar o processo de forma manual. Ou seja, é necessário excluir o objeto Secret atual e recriar de acordo com as recomendações citadas em [Armazenamento de credenciais para BD](#armazenamento-de-credenciais-para-bd) (opcional).**
-
 
 ---
 ## Dúvidas frequentes
