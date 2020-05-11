@@ -1,0 +1,26 @@
+embed-server --server-config=standalone-ha.xml --std-out=echo
+batch
+/subsystem=jgroups/stack=udp/protocol=PING:remove()
+/subsystem=jgroups/stack=udp/protocol=$keycloak_jgroups_discovery_protocol:add(add-index=0, properties=$keycloak_jgroups_discovery_protocol_properties)
+
+/subsystem=jgroups/stack=tcp/protocol=MPING:remove()
+/subsystem=jgroups/stack=tcp/protocol=$keycloak_jgroups_discovery_protocol:add(add-index=0, properties=$keycloak_jgroups_discovery_protocol_properties)
+
+/subsystem=jgroups/channel=ee:write-attribute(name="stack", value=$keycloak_jgroups_transport_stack)
+
+/subsystem=infinispan/cache-container=keycloak/distributed-cache=sessions:remove()
+/subsystem=infinispan/cache-container=keycloak/distributed-cache=authenticationSessions:remove()
+/subsystem=infinispan/cache-container=keycloak/distributed-cache=offlineSessions:remove()
+/subsystem=infinispan/cache-container=keycloak/distributed-cache=clientSessions:remove()
+/subsystem=infinispan/cache-container=keycloak/distributed-cache=offlineClientSessions:remove()
+/subsystem=infinispan/cache-container=keycloak/distributed-cache=loginFailures:remove()
+
+/subsystem=infinispan/cache-container=keycloak/replicated-cache=sessions:add()
+/subsystem=infinispan/cache-container=keycloak/replicated-cache=authenticationSessions:add()
+/subsystem=infinispan/cache-container=keycloak/replicated-cache=offlineSessions:add()
+/subsystem=infinispan/cache-container=keycloak/replicated-cache=clientSessions:add()
+/subsystem=infinispan/cache-container=keycloak/replicated-cache=offlineClientSessions:add()
+/subsystem=infinispan/cache-container=keycloak/replicated-cache=loginFailures:add()
+
+run-batch
+stop-embedded-server
