@@ -117,7 +117,7 @@ metadata:
   namespace: sso
   labels:
     application: keycloak
-stringData:
+data:
   password: ""
 ---
 apiVersion: v1
@@ -127,7 +127,7 @@ metadata:
   namespace: sso
   labels:
     application: postgres
-stringData:
+data:
   password: ""
 ---
 apiVersion: v1
