@@ -137,5 +137,5 @@ metadata:
   namespace: sso
   labels:
     application: keycloak
-stringData:
+data:
   username: ""
