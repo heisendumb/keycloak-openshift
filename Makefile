@@ -8,8 +8,10 @@ patch:
 create: 
 	oc create -f keycloak-https-mutual-tls.yml
 
+database: 
+	oc create -f postgres-sample.yml
+
 delete:
 	oc delete namespace sso
 
 recreate: delete create
-	
