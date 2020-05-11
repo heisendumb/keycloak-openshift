@@ -26,14 +26,14 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8080
----      
+---
 kind: Service
 apiVersion: v1
 spec:
   ports:
-  - port: 8443
-    targetPort: 8443
-    name: 8443-tcp
+    - port: 8443
+      targetPort: 8443
+      name: 8443-tcp
   selector:
     deploymentConfig: keycloak
 metadata:
@@ -85,8 +85,8 @@ spec:
     termination: reencrypt
     insecureEdgeTerminationPolicy: Redirect
     caCertificate:
-    certificate: 
-    key: 
+    certificate:
+    key:
 ---
 kind: DeploymentConfig
 apiVersion: v1
@@ -106,7 +106,7 @@ spec:
       updatePeriodSeconds: 1
     type: Rolling
   triggers:
-  - type: ConfigChange
+    - type: ConfigChange
   replicas: 1
   selector:
     deploymentConfig: keycloak
@@ -118,108 +118,88 @@ spec:
         application: keycloak
     spec:
       containers:
-      - name: keycloak
-        image: docker-registry.default.svc:5000/sso/keycloak:latest
-        livenessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: "/"
-            port: 8080
-            scheme: HTTP
-          initialDelaySeconds: 240
-          timeoutSeconds: 5
-          periodSeconds: 10
-        ports:
-        - containerPort: 8080
-          protocol: TCP
-        - name: https
-          containerPort: 8443
-          protocol: TCP
-        readinessProbe:
-          failureThreshold: 10
-          httpGet:
-            path: "/"
-            port: 8080
-            scheme: HTTP
-          initialDelaySeconds: 180
-          timeoutSeconds: 5
-          periodSeconds: 10
-        resources:
-          limits:
-            cpu: '1'
-            memory: 768Mi
-          requests:
-            cpu: 100m
-            memory: 100Mi
-        env:
-        - name: KEYCLOAK_USER
-          valueFrom:
-            secretKeyRef:
-              key: username
-              name: keycloak-admin-user-secret
-        - name: KEYCLOAK_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              key: password
-              name: keycloak-admin-password-secret
-        - name: DB_VENDOR
-          value: POSTGRES
-        - name: DB_ADDR
-          value: 
-        - name: DB_DATABASE
-          value: 
-        - name: DB_USER
-          valueFrom:
-            secretKeyRef:
-              key: username
-              name: postgresql-username-secret
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              key: password
-              name: postgresql-password-secret
-        - name: X509_CA_BUNDLE
-          value: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt /var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-        - name: JGROUPS_DISCOVERY_PROTOCOL
-          value: "dns.DNS_PING"
-        - name: JGROUPS_DISCOVERY_PROPERTIES
-          value: "dns_query=keycloak-cluster.sso.svc.cluster.local"
-        - name: KEYCLOAK_WELCOME_THEME
-          value: "keycloak"
-        - name: KEYCLOAK_DEFAULT_THEME
-          value: "keycloak"
-        - name: PROXY_ADDRESS_FORWARDING
-          value: "true"
-        securityContext:
-          privileged: false
-        volumeMounts:
-        - name: keycloak-x509-https-volume
-          mountPath: "/etc/x509/https"
-          readOnly: true
+        - name: keycloak
+          image: docker-registry.default.svc:5000/sso/keycloak:latest
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: "/"
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 240
+            timeoutSeconds: 5
+            periodSeconds: 10
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 10
+            httpGet:
+              path: "/"
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 180
+            timeoutSeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: "1"
+              memory: 768Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          env:
+            - name: KEYCLOAK_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: keycloak-admin-user-secret
+            - name: KEYCLOAK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: keycloak-admin-password-secret
+            - name: DB_VENDOR
+              value: POSTGRES
+            - name: DB_ADDR
+              value: postgres.sso.svc.cluster.local
+            - name: DB_DATABASE
+              value: KEYCLOAK
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: postgresql-username-secret
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: postgresql-password-secret
+            - name: X509_CA_BUNDLE
+              value: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt /var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+            - name: JGROUPS_DISCOVERY_PROTOCOL
+              value: "dns.DNS_PING"
+            - name: JGROUPS_DISCOVERY_PROPERTIES
+              value: "dns_query=keycloak-cluster.sso.svc.cluster.local"
+            - name: KEYCLOAK_WELCOME_THEME
+              value: "keycloak"
+            - name: KEYCLOAK_DEFAULT_THEME
+              value: "keycloak"
+            - name: PROXY_ADDRESS_FORWARDING
+              value: "true"
+          securityContext:
+            privileged: false
+          volumeMounts:
+            - name: keycloak-x509-https-volume
+              mountPath: "/etc/x509/https"
+              readOnly: true
       volumes:
-      - name: keycloak-x509-https-volume
-        secret:
-          secretName: keycloak-x509-https-secret
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: postgresql-password-secret
-  namespace: sso
-  labels:
-    application: keycloak
-stringData:
-  password: ""
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: postgresql-username-secret
-  namespace: sso
-  labels:
-    application: keycloak
-stringData:
-  username: ""
+        - name: keycloak-x509-https-volume
+          secret:
+            secretName: keycloak-x509-https-secret
 ---
 apiVersion: v1
 kind: Secret
@@ -240,7 +220,7 @@ metadata:
     application: keycloak
 data:
   password: ""
---- 
+---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
@@ -248,10 +228,10 @@ metadata:
   namespace: sso
 spec:
   scaleTargetRef:
-    kind: DeploymentConfig 
-    name: keycloak 
-    apiVersion: v1 
+    kind: DeploymentConfig
+    name: keycloak
+    apiVersion: v1
     subresource: scale
-  minReplicas: 1 
+  minReplicas: 1
   maxReplicas: 2
   targetCPUUtilizationPercentage: 90
