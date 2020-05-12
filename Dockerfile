@@ -2,9 +2,9 @@ FROM jboss/keycloak:9.0.2
 
 LABEL maintainer="Guilherme Albuquerque "heisendumb""
 
-COPY ./srv/keycloak/login-int/default.cli /opt/jboss/tools/cli/jgroups/discovery/default.cli
+COPY ./default.cli /opt/jboss/tools/cli/jgroups/discovery/default.cli
 
-COPY ./srv/keycloak/login-int/themes /opt/jboss/keycloak/themes/
+COPY ./themes /opt/jboss/keycloak/themes/
 
 USER root 
 
