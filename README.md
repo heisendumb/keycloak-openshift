@@ -1,15 +1,17 @@
 Para implantação do serviço abaixo foi utilizado como base o repositório do [Keycloak](https://github.com/keycloak/keycloak-containers).
 
-Esse documento apresenta instruções passo a passo sobre como implantar Keycloak (modo cluster) em um cluster de OpenShift. 
+Esse documento apresenta instruções passo a passo sobre como implantar Keycloak (modo cluster) em um cluster de OpenShift.
 
 ### Índice
+
 <!--ts-->
- * [Imagem do Keycloak em contêiner Docker](#imagem-do-contêiner)
- * [Implantação Keycloak](#implantação-keycloak)
- * [Alterações realizadas](#alterações-realizadas)
- * [Atualização Automatizadada](#atualização-automatizada)
- * [Configuração do SSO](#configuração-do-sso)
- * [Dúvidas frequentes](#dúvidas-frequentes)
+
+- [Imagem do Keycloak em contêiner Docker](#imagem-do-contêiner)
+- [Implantação Keycloak](#implantação-keycloak)
+- [Alterações realizadas](#alterações-realizadas)
+- [Atualização Automatizadada](#atualização-automatizada)
+- [Configuração do SSO](#configuração-do-sso)
+- [Dúvidas frequentes](#dúvidas-frequentes)
 <!--te-->
 
 ## Imagem do Contêiner
@@ -17,38 +19,43 @@ Esse documento apresenta instruções passo a passo sobre como implantar Keycloa
 Construa a imagem do contêiner Docker:
 
 ```
-[username@hostname ~]$ docker build -t keycloak-local:9.0.2 -f ${ROOT_PATH}/srv/keycloak/sso/Dockerfile
-````
+[username@hostname ~]$ docker build -t keycloak-openshift:9.0.2 -f ${PWD}/Dockerfile
+```
 
 ### Rotulando Imagem
 
 Crie o rótulo da imagem segundo o ambiente que será implantado o contêiner, neste caso de produção.
 
 #### Intranet
+
 ```
-[username@hostname ~]$ docker tag keycloak-local:9.0.2 docker-registry-default.example.io/sso/keycloak:latest 
+[username@hostname ~]$ docker tag keycloak-openshift:9.0.2 docker-registry/sso/keycloak:latest
 ```
 
 ---
+
 ### Empurrando Imagem ao Registry no OpenShift
 
-Crie/atualize a imagem do Keycloak no Docker registry no OpenShift. É necessário fazer login no registry do Docker hospedado no **OpenShift**. 
+Crie/atualize a imagem do Keycloak no Docker registry no OpenShift. É necessário fazer login no registry do Docker hospedado no **OpenShift**.
 
 O login no registry é realizado através do comando:
 
 #### Intranet
+
 ```
-[username@hostname ~]$ docker login docker-registry-default.example.io
+[username@hostname ~]$ docker login docker-registry
 ```
 
 A seguir está comando para criar/atualizar a imagem no registry do Docker:
 
 #### Produção
+
 ```
-[username@hostname ~]$ docker push docker-registry-default.example.io/sso/keycloak:latest 
+[username@hostname ~]$ docker push docker-registry/sso/keycloak:latest
 ```
 
 ---
+
 ## Implantação Keycloak
 
 Para prosseguir nesta etapa é necessário realizar login no OpenShift através do seguinte comando:
@@ -65,10 +72,10 @@ Isso irá implantar um cluster de Keycloak com 2 nós de execução. Todos os re
 
 Esse comando irá criar os seguintes recursos:
 
-* 1 namespace denominado de sso no Openshift.
-* 2 pods de Wildfly, que estarão sendo executados em nós diferentes da região de infraestrutura.
-* 3 serviços, sendo o primeiro para service discovery nós do Wildfly, segundo para healtcheck da aplicação e o terceiro para integração com a rota que será criada.
-* 2 rotas, sendo a primeira responsável pelo acesso ao realms do Keycloak para autenticação e a segunda foi criada utilizando um **white list** para reestringir o acesso de administrador no Keycloak.
+- 1 namespace denominado de sso no Openshift.
+- 2 pods de Wildfly, que estarão sendo executados em nós diferentes da região de infraestrutura.
+- 3 serviços, sendo o primeiro para service discovery nós do Wildfly, segundo para healtcheck da aplicação e o terceiro para integração com a rota que será criada.
+- 2 rotas, sendo a primeira responsável pelo acesso ao realms do Keycloak para autenticação e a segunda foi criada utilizando um **white list** para reestringir o acesso de administrador no Keycloak.
 
 ### Pods
 
@@ -99,11 +106,12 @@ secure-keycloak         sso.example.com ... 1 more                              
 ```
 
 ---
+
 ## Alterações realizadas
 
 ### Sincronização do Infinispan
 
-* **Para sincronização do infinispan entre os nós do cluster de Wildfly foi necessário adicionar os seguintes comandos no default.cli**
+- **Para sincronização do infinispan entre os nós do cluster de Wildfly foi necessário adicionar os seguintes comandos no default.cli**
 
 ```
 /subsystem=infinispan/cache-container=keycloak/distributed-cache=sessions:remove()
@@ -123,8 +131,7 @@ secure-keycloak         sso.example.com ... 1 more                              
 
 ## Armazenamento de credenciais para BD
 
-
-* **Criação do objeto Secret do k8s para armazenamento das credenciais**
+- **Criação do objeto Secret do k8s para armazenamento das credenciais**
 
 No caso das credenciais da base de dados, é possível serem codificadas em base64.
 
@@ -171,10 +178,10 @@ stringData:
   username: "username"
 ```
 
-* **Configuração do objeto AutoScale do k8s para autoescalonamento dos containers**
+- **Configuração do objeto AutoScale do k8s para autoescalonamento dos containers**
 
 ```
---- 
+---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
@@ -182,26 +189,27 @@ metadata:
   namespace: sso
 spec:
   scaleTargetRef:
-    kind: DeploymentConfig 
-    name: keycloak 
-    apiVersion: apps/v1 
+    kind: DeploymentConfig
+    name: keycloak
+    apiVersion: apps/v1
     subresource: scale
-  minReplicas: 1 
+  minReplicas: 1
   maxReplicas: 2
   targetCPUUtilizationPercentage: 90
 ---
 ```
 
 ---
+
 ## Dúvidas frequentes
 
-* **A atualização somente do arquivo de README.md irá disparar o pipeline, para que isso não ocorra é necessário adicionar [ci skip] na mensagem de commit quando empurrar a atualização ao repositório**.
+- **A atualização somente do arquivo de README.md irá disparar o pipeline, para que isso não ocorra é necessário adicionar [ci skip] na mensagem de commit quando empurrar a atualização ao repositório**.
 
 ```
 [username@hostname ~]$ git commit -m 'Updated README.md... [ci skip]'
 ```
 
-* **Não é possível implantar o cluster de Keycloak quando já existe uma instalação atual e também não é possível atualizar (rollout) de forma manual utilizando o Makefile.**
+- **Não é possível implantar o cluster de Keycloak quando já existe uma instalação atual e também não é possível atualizar (rollout) de forma manual utilizando o Makefile.**
 
 ```
 [username@hostname ~]$ make all
@@ -226,7 +234,7 @@ Para resolução do problema é necessário excluir o **deploymentconfig** atual
 $ make recreate
 ```
 
-* **Na inicialização cluster não ocorreu sincronização entre os nós do cluster.**
+- **Na inicialização cluster não ocorreu sincronização entre os nós do cluster.**
 
 Log de output de um dos nós do cluster:
 
@@ -271,7 +279,7 @@ pod "keycloak-8-55svj" deleted
 19:56:28,152 INFO  [org.infinispan.CLUSTER] (MSC service thread 1-1) ISPN000094: Received new cluster view for channel ejb: [keycloak-8-55svj|9] (2) [keycloak-8-55svj, keycloak-8-n7gnk]
 ```
 
-* **Não é possível desescalar o cluster para 0 réplica utilizando o console (cockpit) no OpenShift.**
+- **Não é possível desescalar o cluster para 0 réplica utilizando o console (cockpit) no OpenShift.**
 
 Como foi implementado o autoscale de forma horizontal no cluster, utilizando o console não é possível desescalar o cluster para 0 réplica. Para realizar essa ação é necessário utilzar a **API** ou **CLI** do OpenShift.
 
